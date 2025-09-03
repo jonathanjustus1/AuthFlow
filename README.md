@@ -5,11 +5,15 @@ This is a Next.js application that serves as a user authentication learning plat
 ## Getting Started
 
 1.  **Set up Firebase:**
-    *   Create a new Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/).
-    *   In your Firebase project, go to the **Authentication** section and enable the **Email/Password**, **Google**, and **GitHub** sign-in providers.
-    *   Go to the **Firestore Database** section and create a database.
-    *   Go to your **Project Settings** > **General** and find your web app's configuration.
-    *   Create a `.env.local` file in the root of the project. Copy the contents of `.env.local.example` and fill in your Firebase project's configuration values.
+    *   Go to the [Firebase console](https://console.firebase.google.com/) and find your project (`authflow-pro`).
+    *   In the **Build** menu on the left, click on **Authentication**.
+    *   Click the **Get started** button. This will take you to the sign-in method configuration page.
+    *   In the **Sign-in method** tab, you will see a list of providers. Click on and enable the following providers:
+        *   **Email/Password**
+        *   **Google**
+        *   **GitHub**
+    *   Next, in the **Build** menu, click on **Firestore Database**.
+    *   Click the **Create database** button and follow the prompts to create a Firestore database in production mode.
 
 2.  **Install dependencies:**
     ```bash
