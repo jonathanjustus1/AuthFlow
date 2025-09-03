@@ -24,7 +24,10 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
       const currentDaysInMonth = getDaysInMonth(new Date(year, month));
       if (day <= currentDaysInMonth) {
         const newDate = new Date(year, month, day);
-        onChange(newDate);
+        // Only call onChange if the date has actually changed to avoid infinite loops
+        if (newDate.getTime() !== value?.getTime()) {
+          onChange(newDate);
+        }
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,7 +65,7 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
 
   return (
     <div className="flex gap-2">
-      <Select value={month?.toString()} onValueChange={handleMonthChange}>
+      <Select value={month !== undefined ? month.toString() : ""} onValueChange={handleMonthChange}>
         <SelectTrigger>
           <SelectValue placeholder="Month" />
         </SelectTrigger>
@@ -72,7 +75,7 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
           ))}
         </SelectContent>
       </Select>
-      <Select value={day?.toString()} onValueChange={handleDayChange} disabled={month === undefined || year === undefined}>
+      <Select value={day !== undefined ? day.toString() : ""} onValueChange={handleDayChange}>
         <SelectTrigger>
           <SelectValue placeholder="Day" />
         </SelectTrigger>
@@ -82,7 +85,7 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
           ))}
         </SelectContent>
       </Select>
-      <Select value={year?.toString()} onValueChange={handleYearChange}>
+      <Select value={year !== undefined ? year.toString() : ""} onValueChange={handleYearChange}>
         <SelectTrigger>
           <SelectValue placeholder="Year" />
         </SelectTrigger>
