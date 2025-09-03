@@ -4,13 +4,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 import { Icons } from "@/components/icons";
 import { Loader2 } from "lucide-react";
 
@@ -21,7 +20,7 @@ const formSchema = z.object({
 
 export default function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<"google" | "github" | null>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<"google" | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,10 +44,10 @@ export default function SignInForm() {
     }
   }
 
-  const handleSocialSignIn = async (providerName: "google" | "github") => {
+  const handleSocialSignIn = async (providerName: "google") => {
     if (!auth) return;
     setIsSocialLoading(providerName);
-    const provider = providerName === "google" ? new GoogleAuthProvider() : new GithubAuthProvider();
+    const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
@@ -106,14 +105,10 @@ export default function SignInForm() {
           <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1">
         <Button variant="outline" onClick={() => handleSocialSignIn("google")} disabled={!!isSocialLoading}>
           {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Icons name="google" className="mr-2 h-4 w-4" />}
           Google
-        </Button>
-        <Button variant="outline" onClick={() => handleSocialSignIn("github")} disabled={!!isSocialLoading}>
-          {isSocialLoading === 'github' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Icons name="github" className="mr-2 h-4 w-4" />}
-          GitHub
         </Button>
       </div>
     </div>

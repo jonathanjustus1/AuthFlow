@@ -8,7 +8,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  dateOfBirth: Date;
+  dateOfBirth?: Date; // Made optional as it's not collected on all sign-up methods
 }
 
 interface AuthSession {
@@ -51,12 +51,16 @@ export function useAuthSession() {
       const unsubscribeProfile = onSnapshot(profileDocRef, snapshot => {
         if (snapshot.exists()) {
           const data = snapshot.data();
+          const profileData: UserProfile = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+          };
+          if (data.dateOfBirth) {
+            profileData.dateOfBirth = data.dateOfBirth.toDate();
+          }
           setSession(s => ({
             ...s,
-            profile: {
-              ...data,
-              dateOfBirth: data.dateOfBirth.toDate(),
-            } as UserProfile,
+            profile: profileData,
             profileLoading: false,
           }));
         } else {

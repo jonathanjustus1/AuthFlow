@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import type { User } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,19 @@ interface ProfileFormProps {
   user: User;
 }
 
-const profileFormSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required." }),
-  lastName: z.string().min(1, { message: "Last name is required." }),
+// Separate schema for date of birth
+const dobSchema = z.object({
   dateOfBirth: z.date({
     required_error: "A date of birth is required.",
   }),
 });
+
+const profileFormSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required." }),
+  lastName: z.string().min(1, { message: "Last name is required." }),
+  dateOfBirth: z.date().optional(), // Make it optional here
+});
+
 
 export default function ProfileForm({ user }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,25 +42,63 @@ export default function ProfileForm({ user }: ProfileFormProps) {
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
+    defaultValues: async () => {
+      if (!db) return { firstName: "", lastName: "" };
+      const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+      if (profileDoc.exists()) {
+        const data = profileDoc.data();
+        return {
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+        };
+      }
+      return {
+        firstName: "",
+        lastName: "",
+      };
     },
   });
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
+    // We only update DOB if it's not already in the profile, as sign up doesn't collect it.
     if (!db) return;
+
+    // Validate date of birth separately if it's being submitted.
+    if (values.dateOfBirth) {
+        const dobValidation = dobSchema.safeParse({ dateOfBirth: values.dateOfBirth });
+        if (!dobValidation.success) {
+            toast({
+                title: "Invalid Date of Birth",
+                description: "Please select a valid date of birth.",
+                variant: "destructive",
+            });
+            return;
+        }
+    } else {
+        // Check if the profile already has a DOB, if not, require it.
+        const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+        if (!profileDoc.exists() || !profileDoc.data().dateOfBirth) {
+            toast({
+                title: "Date of Birth Required",
+                description: "Please select your date of birth to complete your profile.",
+                variant: "destructive",
+            });
+            return;
+        }
+    }
+
+
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "profiles", user.uid);
-      await setDoc(profileDocRef, values);
+      await setDoc(profileDocRef, values, { merge: true });
       toast({
-        title: "Profile Created!",
-        description: "Welcome to AuthFlow Pro!",
+        title: "Profile Updated!",
+        description: "Your profile has been successfully updated.",
       });
     } catch (error: any) {
       toast({
-        title: "Profile Creation Failed",
+        title: "Profile Update Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
@@ -139,7 +183,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
             </FormItem>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Profile
             </Button>
