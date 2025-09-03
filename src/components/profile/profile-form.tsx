@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -34,32 +34,54 @@ export default function ProfileForm({ user }: ProfileFormProps) {
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: async () => {
-      if (!db) return { firstName: "", lastName: "" };
-      const profileDoc = await getDoc(doc(db, "profiles", user.uid));
-      if (profileDoc.exists()) {
-        const data = profileDoc.data();
-        return {
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          dateOfBirth: data.dateOfBirth?.toDate(),
-        };
-      }
-      // Prefill names from Google/social provider if available
-      const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-      return {
-        firstName: firstName || "",
-        lastName: lastName || "",
-      };
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      dateOfBirth: undefined,
     },
   });
+
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!db) return;
+      try {
+        const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+        if (profileDoc.exists()) {
+          const data = profileDoc.data();
+          form.reset({
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            dateOfBirth: data.dateOfBirth?.toDate(),
+          });
+        } else {
+          // Prefill names from Google/social provider if available
+          const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+          form.reset({
+            firstName: firstName || "",
+            lastName: lastName || "",
+            dateOfBirth: undefined,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+        // Prefill with display name as a fallback on error
+        const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+        form.reset({
+            firstName: firstName || "",
+            lastName: lastName || "",
+            dateOfBirth: undefined
+        });
+      }
+    }
+
+    fetchProfile();
+  }, [user, form]);
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
     if (!db) return;
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "profiles", user.uid);
-      // We only save fields that the user can edit on this form.
       const dataToSave = {
         firstName: values.firstName,
         lastName: values.lastName,
