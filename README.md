@@ -17,9 +17,19 @@ This is a Next.js application that serves as a user authentication learning plat
 2. **Deploy Firestore Rules:**
     * The default security rules for Firestore in production mode are very strict. This project includes a `firestore.rules` file that allows authenticated users to manage their own profiles.
     * You need to deploy these rules for the profile creation to work.
-    * Install the Firebase CLI: `npm install -g firebase-tools`
-    * Log in to Firebase: `firebase login`
-    * Deploy the rules, making sure to replace `authflow-pro` with your actual Firebase Project ID if it's different: `firebase deploy --only firestore:rules --project=authflow-pro`
+    * **Step 1: Install Firebase CLI.** If you haven't already, install the Firebase command-line tools:
+      ```bash
+      npm install -g firebase-tools
+      ```
+    * **Step 2: Log in to Firebase.** Log in to your Google account through the CLI:
+       ```bash
+      firebase login
+       ```
+    * **Step 3: Deploy the rules.** Run the following command from the root directory of this project. Make sure to replace `authflow-pro` with your actual Firebase Project ID if it's different.
+       ```bash
+      firebase deploy --only firestore:rules --project=authflow-pro
+       ```
+    * You should see a "Deploy complete!" message. If you see any errors, please double-check that you are logged in and that the project ID is correct.
 
 
 3.  **Install dependencies:**

@@ -5,14 +5,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { auth, db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 import DateOfBirthPicker from "./date-of-birth-picker";
 
 interface ProfileFormProps {
@@ -43,7 +44,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
 
   useEffect(() => {
     async function fetchProfile() {
-      if (!db) return;
+      if (!db || !user) return;
       try {
         const profileDoc = await getDoc(doc(db, "profiles", user.uid));
         if (profileDoc.exists()) {
@@ -59,7 +60,6 @@ export default function ProfileForm({ user }: ProfileFormProps) {
           form.reset({
             firstName: firstName || "",
             lastName: lastName || "",
-            dateOfBirth: undefined,
           });
         }
       } catch (error) {
@@ -69,13 +69,26 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         form.reset({
             firstName: firstName || "",
             lastName: lastName || "",
-            dateOfBirth: undefined
         });
       }
     }
 
     fetchProfile();
   }, [user, form]);
+  
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+    } catch (error: any) {
+      toast({
+        title: "Error Signing Out",
+        description: error.message || "There was an issue signing you out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
     if (!db) return;
@@ -157,10 +170,14 @@ export default function ProfileForm({ user }: ProfileFormProps) {
               <Input value={user.email || "No email provided"} readOnly disabled />
             </FormItem>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Profile
+            </Button>
+            <Button onClick={handleSignOut} className="w-full" variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
             </Button>
           </CardFooter>
         </form>
