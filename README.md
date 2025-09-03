@@ -11,16 +11,23 @@ This is a Next.js application that serves as a user authentication learning plat
     *   In the **Sign-in method** tab, you will see a list of providers. Click on and enable the following providers:
         *   **Email/Password**
         *   **Google**
-        *   **GitHub**
     *   Next, in the **Build** menu, click on **Firestore Database**.
     *   Click the **Create database** button and follow the prompts to create a Firestore database in production mode.
 
-2.  **Install dependencies:**
+2. **Deploy Firestore Rules:**
+    * The default security rules for Firestore in production mode are very strict. This project includes a `firestore.rules` file that allows authenticated users to manage their own profiles.
+    * You need to deploy these rules for the profile creation to work.
+    * Install the Firebase CLI: `npm install -g firebase-tools`
+    * Log in to Firebase: `firebase login`
+    * Deploy the rules, making sure to replace `authflow-pro` with your actual Firebase Project ID if it's different: `firebase deploy --only firestore:rules --project=authflow-pro`
+
+
+3.  **Install dependencies:**
     ```bash
     npm install
     ```
 
-3.  **Run the development server:**
+4.  **Run the development server:**
     ```bash
     npm run dev
     ```
