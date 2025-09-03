@@ -21,19 +21,22 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
 
   useEffect(() => {
     if (year !== undefined && month !== undefined && day !== undefined) {
-      const newDate = new Date(year, month, day);
-      onChange(newDate);
+      const currentDaysInMonth = getDaysInMonth(new Date(year, month));
+      if (day <= currentDaysInMonth) {
+        const newDate = new Date(year, month, day);
+        onChange(newDate);
+      }
     }
-  }, [year, month, day, onChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, day]);
   
   const handleYearChange = (value: string) => {
     const newYear = parseInt(value, 10);
     setYear(newYear);
-    // Reset day if it's no longer valid for the new month/year
     if(month !== undefined && day !== undefined) {
         const daysInNewMonth = getDaysInMonth(new Date(newYear, month));
         if (day > daysInNewMonth) {
-            setDay(undefined);
+            setDay(daysInNewMonth);
         }
     }
   };
@@ -41,11 +44,10 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
   const handleMonthChange = (value: string) => {
     const newMonth = parseInt(value, 10);
     setMonth(newMonth);
-    // Reset day if it's no longer valid for the new month/year
-    if(year !== undefined && day !== undefined) {
+     if(year !== undefined && day !== undefined) {
         const daysInNewMonth = getDaysInMonth(new Date(year, newMonth));
         if (day > daysInNewMonth) {
-            setDay(undefined);
+            setDay(daysInNewMonth);
         }
     }
   };
@@ -54,10 +56,9 @@ export default function DateOfBirthPicker({ value, onChange }: DateOfBirthPicker
     setDay(parseInt(value, 10));
   };
 
-
   const currentYear = getYear(new Date());
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
-  const days = year !== undefined && month !== undefined ? Array.from({ length: getDaysInMonth(new Date(year, month)) }, (_, i) => i + 1) : [];
+  const days = year !== undefined && month !== undefined ? Array.from({ length: getDaysInMonth(new Date(year, month)) }, (_, i) => i + 1) : Array.from({ length: 31 }, (_, i) => i + 1);
 
   return (
     <div className="flex gap-2">
