@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/client';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 
 export interface UserProfile {
   firstName: string;
@@ -37,45 +37,47 @@ export function useAuthSession() {
       return;
     }
 
-    const unsubscribeAuth = auth.onAuthStateChanged(user => {
-      setSession(s => ({ ...s, user, loading: false }));
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // User is signed in, now check for profile
+        setSession(s => ({ ...s, user, loading: false, profileLoading: true }));
+        if (db) {
+          const profileDocRef = doc(db, 'profiles', user.uid);
+          // Use onSnapshot for real-time updates
+          const unsubscribeProfile = onSnapshot(profileDocRef, (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              const profileData: UserProfile = {
+                firstName: data.firstName,
+                lastName: data.lastName,
+              };
+              if (data.dateOfBirth) {
+                profileData.dateOfBirth = data.dateOfBirth.toDate();
+              }
+              setSession(s => ({
+                ...s,
+                profile: profileData,
+                profileLoading: false,
+              }));
+            } else {
+              // Profile does not exist.
+              setSession(s => ({ ...s, profile: null, profileLoading: false }));
+            }
+          }, (error) => {
+            console.error("Error fetching profile:", error);
+            setSession(s => ({ ...s, profile: null, profileLoading: false }));
+          });
+          return () => unsubscribeProfile();
+        }
+      } else {
+        // User is signed out
+        setSession({ user: null, profile: null, loading: false, profileLoading: false });
+      }
     });
 
     return () => unsubscribeAuth();
   }, []);
 
-  useEffect(() => {
-    if (session.user && db) {
-      setSession(s => ({ ...s, profileLoading: true }));
-      const profileDocRef = doc(db, 'profiles', session.user.uid);
-      const unsubscribeProfile = onSnapshot(profileDocRef, snapshot => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          const profileData: UserProfile = {
-            firstName: data.firstName,
-            lastName: data.lastName,
-          };
-          if (data.dateOfBirth) {
-            profileData.dateOfBirth = data.dateOfBirth.toDate();
-          }
-          setSession(s => ({
-            ...s,
-            profile: profileData,
-            profileLoading: false,
-          }));
-        } else {
-          setSession(s => ({ ...s, profile: null, profileLoading: false }));
-        }
-      }, (error) => {
-        console.error("Error fetching profile:", error);
-        setSession(s => ({ ...s, profile: null, profileLoading: false }));
-      });
-      return () => unsubscribeProfile();
-    } else {
-      // No user, so clear profile and set loading to false
-      setSession(s => ({ ...s, profile: null, profileLoading: false }));
-    }
-  }, [session.user]);
 
   return session;
 }

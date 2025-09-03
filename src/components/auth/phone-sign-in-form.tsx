@@ -12,8 +12,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+// E.164 phone number format validation
+const phoneRegex = new RegExp(
+  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
+);
+
 const phoneFormSchema = z.object({
-  phoneNumber: z.string().min(10, { message: "Please enter a valid phone number with country code." }),
+  phoneNumber: z.string().regex(phoneRegex, { message: "Please enter a valid phone number (e.g., +11234567890)." }),
 });
 
 const codeFormSchema = z.object({
@@ -40,22 +45,23 @@ export default function PhoneSignInForm() {
     const recaptchaContainer = document.getElementById('recaptcha-container');
     if (!recaptchaContainer) return;
     
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
-      }
-    });
+    // Check if verifier is already initialized
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+      });
+    }
 
     return () => {
-        if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-        }
+        // We don't clear the verifier here to avoid re-creating it on every render
     }
   }, [auth]);
 
   async function onPhoneSubmit(values: z.infer<typeof phoneFormSchema>) {
-    if (!auth) return;
+    if (!auth || !window.recaptchaVerifier) return;
     setIsLoading(true);
     try {
       const appVerifier = window.recaptchaVerifier;
@@ -71,9 +77,9 @@ export default function PhoneSignInForm() {
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-       if (window.recaptchaVerifier) {
+       if (window.recaptchaVerifier && window.grecaptcha) {
             window.recaptchaVerifier.render().then((widgetId: any) => {
-                if(auth && window.grecaptcha) {
+                if(auth) {
                     window.grecaptcha.reset(widgetId);
                 }
             });
@@ -88,6 +94,7 @@ export default function PhoneSignInForm() {
     setIsLoading(true);
     try {
       await confirmationResult.confirm(values.code);
+      // The useAuthSession hook will handle redirection to the profile form
     } catch (error: any) {
       toast({
         title: "Verification Failed",
@@ -136,7 +143,7 @@ export default function PhoneSignInForm() {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="+1 123-456-7890" {...field} />
+                  <Input placeholder="+11234567890" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -155,7 +162,7 @@ export default function PhoneSignInForm() {
 
 declare global {
     interface Window {
-        recaptchaVerifier: any;
+        recaptchaVerifier: RecaptchaVerifier;
         grecaptcha: any;
     }
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
@@ -61,11 +61,18 @@ export default function SignUpForm() {
       });
 
     } catch (error: any) {
-      toast({
-        title: "Sign Up Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      if (error.code === 'auth/email-already-in-use') {
+        form.setError('email', {
+          type: 'manual',
+          message: 'This email address is already in use.',
+        });
+      } else {
+        toast({
+          title: "Sign Up Failed",
+          description: error.message || "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +84,8 @@ export default function SignUpForm() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      // The useAuthSession hook will handle redirection to the profile form
+      // if the user is new.
     } catch (error: any) {
       toast({
         title: "Social Sign In Failed",

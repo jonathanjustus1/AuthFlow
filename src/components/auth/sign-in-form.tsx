@@ -50,6 +50,8 @@ export default function SignInForm() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      // The useAuthSession hook will handle redirection to the profile form
+      // if the user is new.
     } catch (error: any) {
       toast({
         title: "Social Sign In Failed",
