@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/client';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export interface UserProfile {
   firstName: string;
   lastName: string;
+  role: string;
   dateOfBirth?: Date; // Made optional as it's not collected on all sign-up methods
 }
 
@@ -50,6 +51,7 @@ export function useAuthSession() {
               const profileData: UserProfile = {
                 firstName: data.firstName,
                 lastName: data.lastName,
+                role: data.role,
               };
               if (data.dateOfBirth) {
                 profileData.dateOfBirth = data.dateOfBirth.toDate();

@@ -11,9 +11,10 @@ import { db } from "@/lib/firebase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -22,17 +23,13 @@ interface ProfileFormProps {
   user: User;
 }
 
-// Separate schema for date of birth
-const dobSchema = z.object({
-  dateOfBirth: z.date({
-    required_error: "A date of birth is required.",
-  }),
-});
-
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
   lastName: z.string().min(1, { message: "Last name is required." }),
-  dateOfBirth: z.date().optional(), // Make it optional here
+  role: z.enum(["student", "teacher"], { required_error: "You must select a role." }),
+  dateOfBirth: z.date({
+    required_error: "A date of birth is required.",
+  }),
 });
 
 
@@ -50,44 +47,21 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         return {
           firstName: data.firstName || "",
           lastName: data.lastName || "",
+          role: data.role,
+          dateOfBirth: data.dateOfBirth?.toDate(),
         };
       }
+      // Prefill names from Google/social provider if available
+      const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
       return {
-        firstName: "",
-        lastName: "",
+        firstName,
+        lastName,
       };
     },
   });
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
-    // We only update DOB if it's not already in the profile, as sign up doesn't collect it.
     if (!db) return;
-
-    // Validate date of birth separately if it's being submitted.
-    if (values.dateOfBirth) {
-        const dobValidation = dobSchema.safeParse({ dateOfBirth: values.dateOfBirth });
-        if (!dobValidation.success) {
-            toast({
-                title: "Invalid Date of Birth",
-                description: "Please select a valid date of birth.",
-                variant: "destructive",
-            });
-            return;
-        }
-    } else {
-        // Check if the profile already has a DOB, if not, require it.
-        const profileDoc = await getDoc(doc(db, "profiles", user.uid));
-        if (!profileDoc.exists() || !profileDoc.data().dateOfBirth) {
-            toast({
-                title: "Date of Birth Required",
-                description: "Please select your date of birth to complete your profile.",
-                variant: "destructive",
-            });
-            return;
-        }
-    }
-
-
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "profiles", user.uid);
@@ -173,6 +147,36 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                       />
                     </PopoverContent>
                   </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Select your role</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="student" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Student</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="teacher" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Teacher</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
