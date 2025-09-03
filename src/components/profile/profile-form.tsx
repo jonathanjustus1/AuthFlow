@@ -48,8 +48,8 @@ export default function ProfileForm({ user }: ProfileFormProps) {
       // Prefill names from Google/social provider if available
       const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
       return {
-        firstName,
-        lastName,
+        firstName: firstName || "",
+        lastName: lastName || "",
       };
     },
   });
