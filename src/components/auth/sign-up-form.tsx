@@ -11,19 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Icons } from "@/components/icons";
 import { Loader2 } from "lucide-react";
+import { Icons } from "@/components/icons";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
   lastName: z.string().min(1, { message: "Last name is required." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
-  role: z.enum(["student", "teacher"], {
-    required_error: "You need to select a role.",
-  }),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions.",
   }),
@@ -57,7 +53,6 @@ export default function SignUpForm() {
       await setDoc(profileDocRef, {
         firstName: values.firstName,
         lastName: values.lastName,
-        role: values.role,
       });
 
       toast({
@@ -82,7 +77,7 @@ export default function SignUpForm() {
       setIsLoading(false);
     }
   }
-
+  
   const handleSocialSignIn = async (providerName: "google") => {
     if (!auth) return;
     setIsSocialLoading(providerName);
@@ -94,13 +89,14 @@ export default function SignUpForm() {
     } catch (error: any) {
       toast({
         title: "Social Sign In Failed",
-        description: error.message || "Could not sign up with the selected provider. Please try again.",
+        description: error.message || "Could not sign in with the selected provider. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSocialLoading(null);
     }
   };
+
 
   return (
     <div className="space-y-4">
@@ -162,36 +158,6 @@ export default function SignUpForm() {
           />
           <FormField
             control={form.control}
-            name="role"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Select your role</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex space-x-4"
-                  >
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="student" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Student</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="teacher" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Teacher</FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="agreeToTerms"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -223,7 +189,7 @@ export default function SignUpForm() {
           <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
-      <div className="grid grid-cols-1">
+       <div className="grid grid-cols-1">
         <Button variant="outline" onClick={() => handleSocialSignIn("google")} disabled={!!isSocialLoading}>
           {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Icons name="google" className="mr-2 h-4 w-4" />}
           Google

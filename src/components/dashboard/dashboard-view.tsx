@@ -43,7 +43,7 @@ export default function DashboardView({ user, profile }: DashboardViewProps) {
             <UserIcon className="h-8 w-8 text-muted-foreground" />
             <div className="flex flex-col">
               <span className="font-semibold">{profile.firstName} {profile.lastName}</span>
-              <Badge variant="secondary" className="w-fit capitalize">{profile.role}</Badge>
+              {profile.role && <Badge variant="secondary" className="w-fit capitalize">{profile.role}</Badge>}
             </div>
           </div>
           <p className="text-sm text-muted-foreground">This is your dashboard. You have successfully authenticated and created a profile.</p>

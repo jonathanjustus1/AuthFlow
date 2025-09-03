@@ -11,10 +11,9 @@ import { db } from "@/lib/firebase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -26,7 +25,6 @@ interface ProfileFormProps {
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
   lastName: z.string().min(1, { message: "Last name is required." }),
-  role: z.enum(["student", "teacher"], { required_error: "You must select a role." }),
   dateOfBirth: z.date({
     required_error: "A date of birth is required.",
   }),
@@ -47,7 +45,6 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         return {
           firstName: data.firstName || "",
           lastName: data.lastName || "",
-          role: data.role,
           dateOfBirth: data.dateOfBirth?.toDate(),
         };
       }
@@ -65,7 +62,13 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "profiles", user.uid);
-      await setDoc(profileDocRef, values, { merge: true });
+      // We only save fields that the user can edit on this form.
+      const dataToSave = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        dateOfBirth: values.dateOfBirth,
+      };
+      await setDoc(profileDocRef, dataToSave, { merge: true });
       toast({
         title: "Profile Updated!",
         description: "Your profile has been successfully updated.",
@@ -139,6 +142,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
+                        captionLayout="dropdown-buttons"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
@@ -147,36 +153,6 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Select your role</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="student" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Student</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="teacher" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Teacher</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

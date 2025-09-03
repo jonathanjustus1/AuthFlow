@@ -8,8 +8,8 @@ import { doc, onSnapshot } from 'firebase/firestore';
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  role: string;
-  dateOfBirth?: Date; // Made optional as it's not collected on all sign-up methods
+  role?: string; // Role is now optional as it's set by an admin
+  dateOfBirth?: Date;
 }
 
 interface AuthSession {
