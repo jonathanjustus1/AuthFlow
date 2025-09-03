@@ -29,7 +29,7 @@ This is a Next.js application that serves as a user authentication learning plat
        ```bash
       firebase deploy --only firestore:rules --project=authflow-pro
        ```
-    * You should see a "Deploy complete!" message. If you see any errors, please double-check that you are logged in and that the project ID is correct.
+    * You should see a "Deploy complete!" message. If you see any errors, please double-check that you are logged in, that you are running the command from the project's root directory, and that the project ID is correct.
 
 
 3.  **Install dependencies:**
