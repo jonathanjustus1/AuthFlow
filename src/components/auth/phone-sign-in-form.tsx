@@ -37,12 +37,16 @@ export default function PhoneSignInForm() {
 
   useEffect(() => {
     if (!auth) return;
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    const recaptchaContainer = document.getElementById('recaptcha-container');
+    if (!recaptchaContainer) return;
+    
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
       'size': 'invisible',
       'callback': (response: any) => {
         // reCAPTCHA solved, allow signInWithPhoneNumber.
       }
     });
+
     return () => {
         if (window.recaptchaVerifier) {
             window.recaptchaVerifier.clear();
@@ -69,7 +73,7 @@ export default function PhoneSignInForm() {
       });
        if (window.recaptchaVerifier) {
             window.recaptchaVerifier.render().then((widgetId: any) => {
-                if(auth) {
+                if(auth && window.grecaptcha) {
                     window.grecaptcha.reset(widgetId);
                 }
             });
@@ -122,27 +126,30 @@ export default function PhoneSignInForm() {
   }
 
   return (
-    <Form {...phoneForm}>
-      <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
-        <FormField
-          control={phoneForm.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number</FormLabel>
-              <FormControl>
-                <Input placeholder="+1 123-456-7890" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Send Verification Code
-        </Button>
-      </form>
-    </Form>
+    <>
+      <Form {...phoneForm}>
+        <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
+          <FormField
+            control={phoneForm.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="+1 123-456-7890" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Verification Code
+          </Button>
+        </form>
+      </Form>
+      <div id="recaptcha-container" className="mt-4"></div>
+    </>
   );
 }
 

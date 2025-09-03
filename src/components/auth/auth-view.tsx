@@ -28,7 +28,6 @@ export default function AuthView() {
             <SignUpForm />
           </TabsContent>
         </Tabs>
-        <div id="recaptcha-container"></div>
       </CardContent>
     </Card>
   );
