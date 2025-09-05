@@ -46,7 +46,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     async function fetchProfile() {
       if (!db || !user) return;
       try {
-        const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+        const profileDoc = await getDoc(doc(db, "users", user.uid));
         if (profileDoc.exists()) {
           const data = profileDoc.data();
           form.reset({
@@ -96,7 +96,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     if (!db || !user) return;
     setIsLoading(true);
     try {
-      const profileDocRef = doc(db, "profiles", user.uid);
+      const profileDocRef = doc(db, "users", user.uid);
       const profileDoc = await getDoc(profileDocRef);
 
       const dataToSave: any = {

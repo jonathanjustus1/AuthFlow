@@ -46,7 +46,7 @@ export function useAuthSession() {
       if (user) {
         setSession(s => ({ ...s, user, loading: false, profileLoading: true }));
         if (db) {
-          const profileDocRef = doc(db, 'profiles', user.uid);
+          const profileDocRef = doc(db, 'users', user.uid);
           
           const unsubscribeProfile = onSnapshot(profileDocRef, async (snapshot) => {
             if (snapshot.exists()) {
