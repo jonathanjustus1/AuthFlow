@@ -54,22 +54,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
             lastName: data.lastName || "",
             dateOfBirth: data.dateOfBirth?.toDate(),
           });
-        } else {
-          // Prefill names from Google/social provider if available
-          const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-          form.reset({
-            firstName: firstName || "",
-            lastName: lastName || "",
-          });
         }
       } catch (error) {
         console.error("Failed to fetch profile", error);
-        // Prefill with display name as a fallback on error
-        const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-        form.reset({
-            firstName: firstName || "",
-            lastName: lastName || "",
-        });
       }
     }
 
@@ -99,9 +86,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         firstName: values.firstName,
         lastName: values.lastName,
         dateOfBirth: values.dateOfBirth,
-        accountCreationTime: user.metadata.creationTime ? new Date(user.metadata.creationTime) : serverTimestamp(),
         lastSignInTime: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime) : serverTimestamp(),
       };
+      // Use merge: true to update the document without overwriting existing fields like accountCreationTime
       await setDoc(profileDocRef, dataToSave, { merge: true });
       toast({
         title: "Profile Updated!",

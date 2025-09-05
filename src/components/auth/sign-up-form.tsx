@@ -4,9 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase/client";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,7 +26,6 @@ const formSchema = z.object({
 
 export default function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<"google" | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,11 +40,17 @@ export default function SignUpForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth || !db) return;
+    if (!auth) return;
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
-      // The useAuthSession hook now handles profile creation, so we don't need to do it here.
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      
+      // Update the user's displayName in Firebase Auth
+      await updateProfile(userCredential.user, {
+        displayName: `${values.firstName} ${values.lastName}`
+      });
+
+      // The useAuthSession hook will now automatically handle creating the user document in Firestore.
       // This ensures a consistent flow where the user is always redirected to the profile form
       // to enter their date of birth.
 
@@ -73,25 +77,6 @@ export default function SignUpForm() {
     }
   }
   
-  const handleSocialSignIn = async (providerName: "google") => {
-    if (!auth) return;
-    setIsSocialLoading(providerName);
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      // The useAuthSession hook will handle redirection to the profile form
-      // if the user is new.
-    } catch (error: any) {
-      toast({
-        title: "Social Sign In Failed",
-        description: error.message || "Could not sign in with the selected provider. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSocialLoading(null);
-    }
-  };
-
 
   return (
     <div className="space-y-4">
@@ -176,20 +161,6 @@ export default function SignUpForm() {
           </Button>
         </form>
       </Form>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-        </div>
-      </div>
-       <div className="grid grid-cols-1">
-        <Button variant="outline" onClick={() => handleSocialSignIn("google")} disabled={!!isSocialLoading}>
-          {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Icons name="google" className="mr-2 h-4 w-4" />}
-          Google
-        </Button>
-      </div>
     </div>
   );
 }
