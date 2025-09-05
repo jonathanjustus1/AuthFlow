@@ -1,14 +1,16 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
+import { getAdditionalUserInfo } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/client';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  role?: string; // Role is now optional as it's set by an admin
+  role?: string; 
   dateOfBirth?: Date;
 }
 
@@ -40,12 +42,11 @@ export function useAuthSession() {
 
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // User is signed in, now check for profile
         setSession(s => ({ ...s, user, loading: false, profileLoading: true }));
         if (db) {
           const profileDocRef = doc(db, 'profiles', user.uid);
-          // Use onSnapshot for real-time updates
-          const unsubscribeProfile = onSnapshot(profileDocRef, (snapshot) => {
+          
+          const unsubscribeProfile = onSnapshot(profileDocRef, async (snapshot) => {
             if (snapshot.exists()) {
               const data = snapshot.data();
               const profileData: UserProfile = {
@@ -62,8 +63,29 @@ export function useAuthSession() {
                 profileLoading: false,
               }));
             } else {
-              // Profile does not exist.
-              setSession(s => ({ ...s, profile: null, profileLoading: false }));
+              // Profile does not exist, check if this is a new social user
+              // This is a bit of a workaround because onAuthStateChanged doesn't give us the full credential
+              // A more robust way is to handle this in the signInWithPopup().then() block, but that scatters logic.
+              // We'll try to handle it here based on user metadata.
+              const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
+              
+              if (isNewUser && user.displayName) {
+                try {
+                  const [firstName, ...lastNameParts] = user.displayName.split(' ');
+                  const lastName = lastNameParts.join(' ');
+                  const newProfile: UserProfile = {
+                    firstName: firstName || '',
+                    lastName: lastName || '',
+                  };
+                  await setDoc(profileDocRef, newProfile);
+                  // The onSnapshot listener will then pick up this new document
+                } catch (error) {
+                    console.error("Error creating profile for new social user:", error);
+                    setSession(s => ({ ...s, profile: null, profileLoading: false }));
+                }
+              } else {
+                 setSession(s => ({ ...s, profile: null, profileLoading: false }));
+              }
             }
           }, (error) => {
             console.error("Error fetching profile:", error);
