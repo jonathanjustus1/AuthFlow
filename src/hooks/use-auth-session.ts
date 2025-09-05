@@ -8,8 +8,10 @@ import { doc, onSnapshot } from 'firebase/firestore';
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  role?: string; // Role is now optional as it's set by an admin
+  role?: string; 
   dateOfBirth?: Date;
+  accountCreationTime?: Date;
+  lastSignInTime?: Date;
 }
 
 interface AuthSession {
@@ -43,7 +45,7 @@ export function useAuthSession() {
         // User is signed in, now check for profile
         setSession(s => ({ ...s, user, loading: false, profileLoading: true }));
         if (db) {
-          const profileDocRef = doc(db, 'profiles', user.uid);
+          const profileDocRef = doc(db, 'users', user.uid);
           // Use onSnapshot for real-time updates
           const unsubscribeProfile = onSnapshot(profileDocRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -56,13 +58,19 @@ export function useAuthSession() {
               if (data.dateOfBirth) {
                 profileData.dateOfBirth = data.dateOfBirth.toDate();
               }
+               if (data.accountCreationTime) {
+                profileData.accountCreationTime = data.accountCreationTime.toDate();
+              }
+              if (data.lastSignInTime) {
+                profileData.lastSignInTime = data.lastSignInTime.toDate();
+              }
               setSession(s => ({
                 ...s,
                 profile: profileData,
                 profileLoading: false,
               }));
             } else {
-              // Profile does not exist.
+              // Profile does not exist, user needs to create one.
               setSession(s => ({ ...s, profile: null, profileLoading: false }));
             }
           }, (error) => {

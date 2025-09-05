@@ -45,19 +45,14 @@ export default function SignUpForm() {
     if (!auth || !db) return;
     setIsLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      // Create user profile in Firestore
-      const profileDocRef = doc(db, "profiles", user.uid);
-      await setDoc(profileDocRef, {
-        firstName: values.firstName,
-        lastName: values.lastName,
-      });
+      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      // The useAuthSession hook now handles profile creation, so we don't need to do it here.
+      // This ensures a consistent flow where the user is always redirected to the profile form
+      // to enter their date of birth.
 
       toast({
         title: "Account Created!",
-        description: "Welcome to AuthFlow Pro!",
+        description: "Please complete your profile.",
       });
 
     } catch (error: any) {

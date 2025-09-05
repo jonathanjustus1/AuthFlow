@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User } from "firebase/auth";
 import { signOut } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +46,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     async function fetchProfile() {
       if (!db || !user) return;
       try {
-        const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+        const profileDoc = await getDoc(doc(db, "users", user.uid));
         if (profileDoc.exists()) {
           const data = profileDoc.data();
           form.reset({
@@ -94,11 +94,13 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     if (!db) return;
     setIsLoading(true);
     try {
-      const profileDocRef = doc(db, "profiles", user.uid);
+      const profileDocRef = doc(db, "users", user.uid);
       const dataToSave = {
         firstName: values.firstName,
         lastName: values.lastName,
         dateOfBirth: values.dateOfBirth,
+        accountCreationTime: user.metadata.creationTime ? new Date(user.metadata.creationTime) : serverTimestamp(),
+        lastSignInTime: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime) : serverTimestamp(),
       };
       await setDoc(profileDocRef, dataToSave, { merge: true });
       toast({
