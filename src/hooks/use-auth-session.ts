@@ -8,6 +8,8 @@ import { doc, onSnapshot, setDoc, getDoc, serverTimestamp } from 'firebase/fires
 export interface UserProfile {
   firstName: string;
   lastName: string;
+  email?: string;
+  providerId?: string;
   role?: string; 
   dateOfBirth?: Date;
   accountCreationTime?: Date;
@@ -52,6 +54,8 @@ export function useAuthSession() {
               const profileData: UserProfile = {
                 firstName: data.firstName,
                 lastName: data.lastName,
+                email: data.email,
+                providerId: data.providerId,
                 role: data.role,
                 dateOfBirth: data.dateOfBirth?.toDate(),
                 accountCreationTime: data.accountCreationTime?.toDate(),
@@ -63,26 +67,25 @@ export function useAuthSession() {
                 profileLoading: false,
               }));
             } else {
-              // Profile doesn't exist, create it for new users
-              const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
-              if (isNewUser) {
+              // Profile doesn't exist, this must be the very first sign-in for this user.
+              // Create the profile document.
+                try {
                   const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
                   const newProfileData = {
                       firstName: firstName,
                       lastName: lastName,
+                      email: user.email,
+                      providerId: user.providerData[0]?.providerId || 'unknown',
                       accountCreationTime: user.metadata.creationTime ? new Date(user.metadata.creationTime) : serverTimestamp(),
                       lastSignInTime: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime) : serverTimestamp(),
                   };
-                  try {
-                      await setDoc(profileDocRef, newProfileData);
-                      // The onSnapshot listener will pick this up and update the session state.
-                  } catch (error) {
-                      console.error("Error creating user profile:", error);
-                      setSession(s => ({ ...s, profile: null, profileLoading: false }));
-                  }
-              } else {
-                 setSession(s => ({ ...s, profile: null, profileLoading: false }));
-              }
+                  await setDoc(profileDocRef, newProfileData);
+                  // The onSnapshot listener will pick this up and update the session state,
+                  // but we'll show the profile form because dateOfBirth is missing.
+                } catch (error) {
+                    console.error("Error creating user profile:", error);
+                    setSession(s => ({ ...s, profile: null, profileLoading: false }));
+                }
             }
           }, (error) => {
             console.error("Error fetching profile:", error);
@@ -98,7 +101,6 @@ export function useAuthSession() {
 
     return () => unsubscribeAuth();
   }, []);
-
 
   return session;
 }

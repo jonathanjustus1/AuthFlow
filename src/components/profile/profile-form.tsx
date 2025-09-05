@@ -15,9 +15,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogOut } from "lucide-react";
 import DateOfBirthPicker from "./date-of-birth-picker";
+import type { UserProfile } from "@/hooks/use-auth-session";
 
 interface ProfileFormProps {
   user: User;
+  profile: UserProfile;
 }
 
 const profileFormSchema = z.object({
@@ -29,40 +31,19 @@ const profileFormSchema = z.object({
 });
 
 
-export default function ProfileForm({ user }: ProfileFormProps) {
+export default function ProfileForm({ user, profile }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      dateOfBirth: undefined,
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
+      dateOfBirth: profile?.dateOfBirth,
     },
   });
 
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!db || !user) return;
-      try {
-        const profileDoc = await getDoc(doc(db, "users", user.uid));
-        if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          form.reset({
-            firstName: data.firstName || "",
-            lastName: data.lastName || "",
-            dateOfBirth: data.dateOfBirth?.toDate(),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile", error);
-      }
-    }
-
-    fetchProfile();
-  }, [user, form]);
-  
   const handleSignOut = async () => {
     if (!auth) return;
     try {
@@ -82,14 +63,16 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "users", user.uid);
+      
       const dataToSave = {
         firstName: values.firstName,
         lastName: values.lastName,
         dateOfBirth: values.dateOfBirth,
         lastSignInTime: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime) : serverTimestamp(),
       };
-      // Use merge: true to update the document without overwriting existing fields like accountCreationTime
+      
       await setDoc(profileDocRef, dataToSave, { merge: true });
+      
       toast({
         title: "Profile Updated!",
         description: "Your profile has been successfully updated.",

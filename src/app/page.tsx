@@ -45,11 +45,24 @@ export default function Home() {
       return <AuthView />;
     }
 
-    if (!profile) {
-      return <ProfileForm user={user} />;
+    // If the profile exists but dateOfBirth is missing, show the profile form.
+    if (profile && !profile.dateOfBirth) {
+      return <ProfileForm user={user} profile={profile} />;
     }
 
-    return <DashboardView user={user} profile={profile} />;
+    // If the profile is fully complete, show the dashboard.
+    if (profile) {
+      return <DashboardView user={user} profile={profile} />;
+    }
+
+    // Fallback while profile is being created for the first time
+    return (
+       <Card className="flex h-96 items-center justify-center">
+          <CardContent>
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+    );
   };
 
   return (
