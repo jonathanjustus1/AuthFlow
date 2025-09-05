@@ -48,16 +48,12 @@ export default function SignUpForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Create user profile in Firestore
-      const profileDocRef = doc(db, "profiles", user.uid);
-      await setDoc(profileDocRef, {
-        firstName: values.firstName,
-        lastName: values.lastName,
-      });
+      // Profile will be created by the ProfileForm after this.
+      // We don't need to create a partial profile here anymore.
 
       toast({
         title: "Account Created!",
-        description: "Welcome to AuthFlow Pro!",
+        description: "Welcome! Please complete your profile.",
       });
 
     } catch (error: any) {
@@ -84,8 +80,7 @@ export default function SignUpForm() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The useAuthSession hook will handle redirection to the profile form
-      // if the user is new.
+      // The useAuthSession hook will see there's no profile and redirect to the ProfileForm
     } catch (error: any) {
       toast({
         title: "Social Sign In Failed",

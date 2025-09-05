@@ -12,6 +12,8 @@ export interface UserProfile {
   lastName: string;
   role?: string; 
   dateOfBirth?: Date;
+  accountCreatedAt?: Date;
+  lastSignInAt?: Date;
 }
 
 interface AuthSession {
@@ -57,35 +59,20 @@ export function useAuthSession() {
               if (data.dateOfBirth) {
                 profileData.dateOfBirth = data.dateOfBirth.toDate();
               }
+               if (data.accountCreatedAt) {
+                profileData.accountCreatedAt = data.accountCreatedAt.toDate();
+              }
+              if (data.lastSignInAt) {
+                profileData.lastSignInAt = data.lastSignInAt.toDate();
+              }
               setSession(s => ({
                 ...s,
                 profile: profileData,
                 profileLoading: false,
               }));
             } else {
-              // Profile does not exist, check if this is a new social user
-              // This is a bit of a workaround because onAuthStateChanged doesn't give us the full credential
-              // A more robust way is to handle this in the signInWithPopup().then() block, but that scatters logic.
-              // We'll try to handle it here based on user metadata.
-              const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
-              
-              if (isNewUser && user.displayName) {
-                try {
-                  const [firstName, ...lastNameParts] = user.displayName.split(' ');
-                  const lastName = lastNameParts.join(' ');
-                  const newProfile: UserProfile = {
-                    firstName: firstName || '',
-                    lastName: lastName || '',
-                  };
-                  await setDoc(profileDocRef, newProfile);
-                  // The onSnapshot listener will then pick up this new document
-                } catch (error) {
-                    console.error("Error creating profile for new social user:", error);
-                    setSession(s => ({ ...s, profile: null, profileLoading: false }));
-                }
-              } else {
-                 setSession(s => ({ ...s, profile: null, profileLoading: false }));
-              }
+              // Profile does not exist, so user needs to complete the profile form.
+              setSession(s => ({ ...s, profile: null, profileLoading: false }));
             }
           }, (error) => {
             console.error("Error fetching profile:", error);

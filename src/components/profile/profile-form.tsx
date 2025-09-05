@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User } from "firebase/auth";
 import { signOut } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,8 @@ export default function ProfileForm({ user }: ProfileFormProps) {
           });
         } else {
           // Prefill names from Google/social provider if available
-          const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+          const [firstName, ...lastNameParts] = user.displayName?.split(" ") || ["", ""];
+          const lastName = lastNameParts.join(' ');
           form.reset({
             firstName: firstName || "",
             lastName: lastName || "",
@@ -65,7 +66,8 @@ export default function ProfileForm({ user }: ProfileFormProps) {
       } catch (error) {
         console.error("Failed to fetch profile", error);
         // Prefill with display name as a fallback on error
-        const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+        const [firstName, ...lastNameParts] = user.displayName?.split(" ") || ["", ""];
+        const lastName = lastNameParts.join(' ');
         form.reset({
             firstName: firstName || "",
             lastName: lastName || "",
@@ -91,19 +93,28 @@ export default function ProfileForm({ user }: ProfileFormProps) {
 
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
-    if (!db) return;
+    if (!db || !user) return;
     setIsLoading(true);
     try {
       const profileDocRef = doc(db, "profiles", user.uid);
-      const dataToSave = {
+      const profileDoc = await getDoc(profileDocRef);
+
+      const dataToSave: any = {
         firstName: values.firstName,
         lastName: values.lastName,
         dateOfBirth: values.dateOfBirth,
+        lastSignInAt: new Date(user.metadata.lastSignInTime || Date.now()),
       };
+
+      if (!profileDoc.exists()) {
+        dataToSave.accountCreatedAt = new Date(user.metadata.creationTime || Date.now());
+      }
+      
       await setDoc(profileDocRef, dataToSave, { merge: true });
+
       toast({
-        title: "Profile Updated!",
-        description: "Your profile has been successfully updated.",
+        title: "Profile Saved!",
+        description: "Your profile has been successfully saved.",
       });
     } catch (error: any) {
       toast({
